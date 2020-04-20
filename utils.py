@@ -9,6 +9,7 @@ from datetime import timedelta, date, datetime
 
 import shutil
 import requests
+import random
 
 import cv2 
 import pytesseract
@@ -41,8 +42,8 @@ def send_message(driver, msg):
     mesg_element.send_keys(msg)
     mesg_element.send_keys(Keys.RETURN)
     print(f"Sent message: '{msg}'")
-    time.sleep(2)
-    detect_captcha(driver)
+    time.sleep(3)
+    detect_captcha(driver, "m4qy8")
     return 
 
 # heals the player
@@ -57,6 +58,7 @@ def hunt(driver):
         heal(driver)
 
     send_message(driver, "rpg hunt")
+    send_message(driver, random.choice(QUIPS))  # add some flavor
 
 # Safely does an adventure
 def adventure(driver):
@@ -103,8 +105,7 @@ def gather_3(driver, count, focus="even"):
 # Gets the amount of life potions in the players inv
 def get_life_potions(driver):
     send_message(driver, "rpg i")
-    inv_elements = driver.find_elements_by_xpath("//img[@aria-label=':lifepotion:']")
-    inv_element = inv_elements[len(inv_elements)-1]
+    inv_element = driver.find_elements_by_xpath("//img[@aria-label=':lifepotion:']")[-1]
     inv_txt = inv_element.find_element_by_xpath("./..").text
 
     return re.search("life potion: (.*)", inv_txt).group(1)
@@ -114,16 +115,14 @@ def buy_life_potion(driver):
     if int(get_life_potions(driver)) < 10:
         send_message(driver, "rpg buy life potion")
 
-# Gets the players health as an int
+# Gets the players stats and returns as a dict
 def get_stats(driver):
     send_message(driver, "rpg p")
     
-    stats_elements = driver.find_elements_by_xpath("//img[@aria-label=':heart:']")
-    stats_element = stats_elements[len(stats_elements)-1]
+    stats_element = driver.find_elements_by_xpath("//img[@aria-label=':heart:']")[-1]
     stats_txt = stats_element.find_element_by_xpath("./..").text
 
-    coin_elements = driver.find_elements_by_xpath("//img[@aria-label=':coin:']")
-    coin_element = coin_elements[len(coin_elements)-1]
+    coin_element = driver.find_elements_by_xpath("//img[@aria-label=':coin:']")[-1]
     coin_txt = coin_element.find_element_by_xpath("./..").text
 
     stats = {
@@ -144,17 +143,15 @@ def get_hp_as_pct(stats):
     return num / den
 
 # Checks if a captcha has been thrown
-def detect_captcha(driver):
+def detect_captcha(driver, last_captcha):
     # keep track of minimal
-    try:
-        img_elements = driver.find_elements_by_xpath("//a[@href='*.epic_guard.png']")
-        print(img_elements)
+    try:                                            # TODO this might need to be epic guard
+        img_elements = driver.find_elements_by_xpath('//a[contains(@href, "profile.png")]') 
         img_element = img_elements[len(img_elements)-1]
         img_url = img_element.get_attribute('href') 
         filename = "./defeated_captchas/defeated.png"
 
         user_agent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46'
-        img_url = "https://cdn.discordapp.com/attachments/623235554762424340/701268445764780112/epic_guard.png"
 
         response = requests.get(img_url, stream=True, headers={'User-Agent': user_agent})
         with open(filename, 'wb') as out_file:
@@ -162,8 +159,10 @@ def detect_captcha(driver):
         del response
 
         captcha = translate_img(filename)
-        print(f"Captcha defeated: {captcha}")
-        send_message(driver, captcha)
+        if captcha != last_captcha:
+            print(f"Captcha defeated: {captcha}")
+            send_message(driver, captcha)
+            last_captcha = captcha
     except:
         print("No captcha, keep playin brother")
 
@@ -185,16 +184,7 @@ def five_cycle(driver, gather_count, focus="even"):
     for i in range(5):
         hunt(driver)
         time.sleep(65)
-        hunt(driver)
-        time.sleep(65)
-        hunt(driver)
-        time.sleep(65)
-        hunt(driver)
-        time.sleep(65)
-        hunt(driver)
-        time.sleep(65)
-    send_message(driver, random.choice(QUIPS))
-    
+
 
 # hunts every minute, gathers every 5, and advs every 60
 def sixty_cycle(driver, gather_count, focus="even"):
@@ -202,4 +192,3 @@ def sixty_cycle(driver, gather_count, focus="even"):
         print(f"On cycle {i+1}/12")
         five_cycle(driver, gather_count, focus=focus)
     adventure(driver)
-
