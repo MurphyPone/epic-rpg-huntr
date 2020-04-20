@@ -146,7 +146,7 @@ def get_hp_as_pct(stats):
 def detect_captcha(driver, last_captcha):
     # keep track of minimal
     try:                                            # TODO this might need to be epic guard
-        img_elements = driver.find_elements_by_xpath('//a[contains(@href, "profile.png")]') 
+        img_elements = driver.find_elements_by_xpath('//a[contains(@href, "epic_guard.png")]') 
         img_element = img_elements[len(img_elements)-1]
         img_url = img_element.get_attribute('href') 
         filename = "./defeated_captchas/defeated.png"
