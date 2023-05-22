@@ -1,4 +1,4 @@
-requests==2.22.0
+requests==2.31.0
 pytesseract==0.3.3
 opencv_contrib_python==4.2.0.34
 selenium==3.141.0
